@@ -1,0 +1,10 @@
+/* TODO: add reset file for css */
+
+body {
+    width: 100%;
+    height: 100%;
+}
+
+input, img {
+    float: left;
+}
