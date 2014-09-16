@@ -1,93 +1,124 @@
 (function () {
-  var CACHE_SIZE = 10;
-
-  var carousel = {
-    currentId: 0,
-    offset: -Math.floor(CACHE_SIZE/2),
-    middle: Math.floor(CACHE_SIZE/2),
-    imgs: [],
-
-    initialize: function () {
-      // Pre-populate the cache
-      for (var i = this.offset; i < (CACHE_SIZE + this.offset); i++) {
-        if (i < 0) {
-          this.imgs.push(null);
-          continue;
-        }
-        img = createImg(i);
-        this.imgs.push(img);
-      }
-    },
-
-    showNext: function (e) {
-      e.preventDefault()
-
-      this.currentId++;
-      this.offset++;
-
-      this.imgs.shift();
-      this.imgs.push(createImg(this.offset + CACHE_SIZE));
-
-      showImg(this.imgs[this.middle]);
-    },
-
-    showPrev: function (e) {
-      e.preventDefault()
-
-      if (this.currentId == 0) {
-        return false;
-      }
-
-      this.currentId--;
-      this.offset--;
-
-      this.imgs.pop();
-      this.imgs.unshift(createImg(this.offset));
-
-      showImg(this.imgs[this.middle]);
-    }
-
-  };
-
   window.onload = function () {
     var nextBtn = document.getElementsByClassName('next-btn')[0],
         prevBtn = document.getElementsByClassName('prev-btn')[0];
 
-    carousel.initialize();
+    var carousel = new Carousel();
+
+    nextBtn.addEventListener('click', carousel.next.bind(carousel), false);
+    prevBtn.addEventListener('click', carousel.prev.bind(carousel), false);
+  };
 
 
-    nextBtn.addEventListener('click', carousel.showNext, false);
-    prevBtn.addEventListener('click', carousel.showPrev, false);
+  function Carousel() {
+    this.cache = new Cache();
+
+    this.position = 0;
+    this.cache.move(0);
+    // this.show(); Already shown by HTML
   }
 
-  function onPrevClick(e) {
-    e.preventDefault();
+  Carousel.prototype.next = function (e) {
+    e.preventDefault()
 
-    carousel.showPrev();
-  }
+    this.position++;
+    this.cache.move(this.position);
+    this.show();
+  };
 
-  function onNextClick(e) {
-    e.preventDefault();
+  Carousel.prototype.prev = function (e) {
+    e.preventDefault()
 
-    carousel.showNext();
-  }
+    if (!this.position) {
+      return false;
+    }
 
-  function buildNewImgSrc(index) {
-    return "http://robohash.org/" + index + ".png";
-  }
+    this.position--;
+    this.cache.move(this.position);
+    this.show();
+  };
 
-  function createImg(index) {
-    var img = document.createElement('img'),
-        src = buildNewImgSrc(index);
-
-    img.setAttribute('src', src);
-    return img;
-  }
-
-  function showImg(newImg) {
+  Carousel.prototype.show = function () {
     var el = document.getElementById('img-container');
     el.innerHTML = "";
-    el.appendChild(newImg);
+    el.appendChild(this.cache.images[this.position]);
+  };
+
+
+
+  function Cache() {
+    this.start = 0;
+    this.size = 10;
+    this.length = 0;
+    this._halfSize = Math.floor(this.size/2);
+    this.images = {};
   }
+
+  Cache.prototype.move = function (position) {
+    var start, s, e;
+
+    if (position < this._halfSize) {
+      start = 0;
+    } else {
+      start = position - this._halfSize;
+    }
+
+    s = Math.max(this.start, start),
+    e = Math.min(this.start, start) + this.size;
+
+    for (var key in this.images) {
+      var i = parseInt(key, 10);
+
+      if (i < s || i >= e) {
+        delete this.images[key];
+        this.length--;
+      }
+    }
+
+    this.fetch(position);
+    this.start = start;
+  };
+
+  Cache.prototype.prefetchOne = function (position) {
+    var i = 0;
+
+    if (this.length === this.size) {
+      return;
+    }
+
+    while (true) {
+      if (!this.images[position - i]) {
+        this.fetch(position - i);
+        return;
+      }
+
+      if (!this.images[position + i]) {
+        this.fetch(position + i);
+        return;
+      }
+
+      i++;
+    }
+  };
+
+
+  Cache.prototype.fetch = function (position) {
+    var img = document.createElement('img');
+
+    if (this.images[position]) {
+      return;
+    }
+
+    img.setAttribute('src',
+      "http://robohash.org/" + position + ".png");
+
+    this.length++;
+    this.images[position] = img;
+    console.log('Cache: Fetch: position: ', position);
+  };
+
+
+
+
 
 }());
