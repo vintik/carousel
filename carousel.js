@@ -1,4 +1,5 @@
 (function () {
+
   window.onload = function () {
     var nextBtn = document.getElementsByClassName('next-btn')[0],
         prevBtn = document.getElementsByClassName('prev-btn')[0];
@@ -16,6 +17,10 @@
     this.position = 0;
     this.cache.move(0);
     // this.show(); Already shown by HTML
+
+    this.timer = setInterval(function() {
+      this.cache.prefetch(this.position);
+    }.bind(this), 200);
   }
 
   Carousel.prototype.next = function (e) {
@@ -43,7 +48,6 @@
     el.innerHTML = "";
     el.appendChild(this.cache.images[this.position]);
   };
-
 
 
   function Cache() {
@@ -79,7 +83,7 @@
     this.start = start;
   };
 
-  Cache.prototype.prefetchOne = function (position) {
+  Cache.prototype.prefetch = function (position) {
     var i = 0;
 
     if (this.length === this.size) {
@@ -87,13 +91,15 @@
     }
 
     while (true) {
-      if (!this.images[position - i]) {
-        this.fetch(position - i);
+      var p = position - i;
+      if (p >= 0 && !this.images[p]) {
+        this.fetch(p);
         return;
       }
 
-      if (!this.images[position + i]) {
-        this.fetch(position + i);
+      p = position + i;
+      if (!this.images[p]) {
+        this.fetch(p);
         return;
       }
 
@@ -114,11 +120,6 @@
 
     this.length++;
     this.images[position] = img;
-    console.log('Cache: Fetch: position: ', position);
   };
-
-
-
-
 
 }());
